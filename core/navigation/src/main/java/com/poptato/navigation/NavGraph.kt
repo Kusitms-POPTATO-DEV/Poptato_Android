@@ -97,13 +97,15 @@ fun NavGraphBuilder.myPageNavGraph(navController: NavHostController) {
         composable(NavRoutes.SettingScreen.route) {
             SettingScreen(
                 goBackToMyPage = { navController.popBackStack() },
-                goToServiceDelete = { navController.navigate(NavRoutes.ServiceDeleteScreen.route) }
+                goToServiceDelete = { navController.navigate(NavRoutes.ServiceDeleteScreen.route) },
+                goBackToLogIn = { navController.navigate(NavRoutes.KaKaoLoginScreen.route) }
             )
         }
 
         composable(NavRoutes.ServiceDeleteScreen.route) {
             ServiceDeleteScreen(
-                goBackToSetting = { navController.popBackStack() }
+                goBackToSetting = { navController.popBackStack() },
+                goBackToLogIn = { navController.navigate(NavRoutes.KaKaoLoginScreen.route) }
             )
         }
     }

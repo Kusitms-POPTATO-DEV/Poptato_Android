@@ -21,4 +21,7 @@ interface AuthService {
     suspend fun reissueToken(
         @Body request: ReissueRequestModel
     ): Response<ApiResponse<TokenResponse>>
+
+    @POST(Endpoints.Auth.LOGOUT)
+    suspend fun logout(): Response<ApiResponse<String>>
 }
