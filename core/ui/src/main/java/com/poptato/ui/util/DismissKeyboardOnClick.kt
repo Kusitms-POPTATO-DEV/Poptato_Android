@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 @Composable
 fun DismissKeyboardOnClick(
@@ -17,6 +19,7 @@ fun DismissKeyboardOnClick(
 ) {
     val context = LocalContext.current
     val inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Box(
         modifier = Modifier
@@ -24,8 +27,12 @@ fun DismissKeyboardOnClick(
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
                     val currentFocus = (context as Activity).currentFocus
-                    currentFocus?.let {
-                        inputMethodManager.hideSoftInputFromWindow(it.windowToken, 0)
+
+                    if (inputMethodManager.isAcceptingText) {
+                        currentFocus?.let {
+                            inputMethodManager.hideSoftInputFromWindow(it.windowToken, 0)
+                        }
+                        keyboardController?.hide()
                     }
                 })
             }
