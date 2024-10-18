@@ -14,7 +14,12 @@ object Endpoints {
         const val BACKLOGS = "/backlogs"
     }
 
+    object History {
+        const val HISTORIES = "/histories"
+    }
+
     object MyPage {
         const val USER_DELETE = "/user"
+
     }
 }

@@ -1,6 +1,9 @@
 package com.potato.history
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,11 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -29,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
@@ -43,8 +50,17 @@ import com.poptato.design_system.HistoryListEmpty
 import com.poptato.design_system.HistoryTitle
 import com.poptato.design_system.PoptatoTypo
 import com.poptato.design_system.R
-import com.potato.history.model.HistoryItemModel
-
+import com.poptato.domain.model.response.history.HistoryItemModel
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun HistoryScreen(
@@ -54,14 +70,22 @@ fun HistoryScreen(
     val uiState: HistoryPageState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HistoryContent(
-        uiState = uiState
+        uiState = uiState,
+        onLoadNextPage = { viewModel.getHistoryList() },
+        isRendering = {viewModel.updateRenderingComplete(true)},
+        clearRendering = {viewModel.updateRenderingComplete(false)}
     )
 }
 
 @Composable
 fun HistoryContent(
-    uiState: HistoryPageState = HistoryPageState()
+    uiState: HistoryPageState = HistoryPageState(),
+    onLoadNextPage: () -> Unit,
+    isRendering: () -> Unit,
+    clearRendering: () -> Unit,
 ) {
+    val listState = rememberLazyListState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,20 +109,43 @@ fun HistoryContent(
                 color = Gray00,
                 style = PoptatoTypo.xLSemiBold,
                 modifier = Modifier
+                    .background(Gray100)
                     .padding(start = 16.dp, top = 13.dp, bottom = 13.dp)
             )
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset(x = (0).dp, y = (-16).dp)
+            InfinityLazyColumn(
+                state = listState,
+                loadMore = onLoadNextPage
             ) {
-                items(uiState.historyList,
-                    key = { groupedItem -> groupedItem.date }) { groupedItem ->
-                    DateHeader(date = groupedItem.date)
+
+                items(uiState.historyList) { groupedItem ->
+                    val isFirstOfDate = uiState.historyList.indexOfFirst { it.date == groupedItem.date } == uiState.historyList.indexOf(groupedItem)
+
+                    if (isFirstOfDate) {
+                        DateHeader(date = groupedItem.date)
+                    }
+
                     groupedItem.items.forEach { item ->
                         HistoryListItem(item = item)
                     }
+
+                    if(groupedItem.date != uiState.lastItemDate || !isFirstOfDate){
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    if (groupedItem.date == uiState.nowLastItemDate && !uiState.isRenderingComplete) {
+                        isRendering()
+                    }
                 }
+            }
+
+            LaunchedEffect(Unit) {
+                snapshotFlow { uiState.historyList }
+                    .collect {
+                        if (uiState.isRenderingComplete) {
+                            onLoadNextPage()
+                            clearRendering()
+                        }
+                    }
             }
         }
     }
@@ -109,12 +156,12 @@ fun DateHeader(date: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
         Text(
-            text = date,
+            text = date.replace("-", "."),
             color = Gray70,
             style = PoptatoTypo.xsRegular,
             modifier = Modifier
@@ -129,6 +176,7 @@ fun DateHeader(date: String) {
             color = Gray95
         )
     }
+
 }
 
 @Composable
@@ -148,7 +196,7 @@ fun HistoryListItem(item: HistoryItemModel) {
         )
 
         Text(
-            text = item.title,
+            text = item.content,
             color = Gray00,
             style = PoptatoTypo.smMedium,
             modifier = Modifier.weight(1f)
@@ -156,8 +204,47 @@ fun HistoryListItem(item: HistoryItemModel) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+
+private fun LazyListState.reachedLastItem(): Boolean {
+    val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+    return lastVisibleItem?.index == layoutInfo.totalItemsCount - 1
+}
+
+@SuppressLint("ComposableNaming")
 @Composable
-fun PreviewHistory() {
-    HistoryContent()
+private fun LazyListState.onLoadMoreWhenLastItemVisible(action: () -> Unit) {
+    val reached by remember {
+        derivedStateOf {
+            reachedLastItem()
+        }
+    }
+    LaunchedEffect(reached) {
+        if (reached) action()
+    }
+}
+
+@Composable
+fun InfinityLazyColumn(
+    modifier: Modifier = Modifier,
+    state: LazyListState = rememberLazyListState(),
+    reverseLayout: Boolean = false,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
+    userScrollEnabled: Boolean = true,
+    loadMore: () -> Unit = {},
+    content: LazyListScope.() -> Unit,
+) {
+    state.onLoadMoreWhenLastItemVisible(action = loadMore)
+
+    LazyColumn(
+        modifier = modifier,
+        state = state,
+        reverseLayout = reverseLayout,
+        verticalArrangement = verticalArrangement,
+        horizontalAlignment = horizontalAlignment,
+        flingBehavior = flingBehavior,
+        userScrollEnabled = userScrollEnabled,
+        content = content
+    )
 }

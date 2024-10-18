@@ -1,42 +1,88 @@
 package com.potato.history
 
 import androidx.lifecycle.viewModelScope
+import com.poptato.domain.model.request.backlog.GetBacklogListRequestModel
+import com.poptato.domain.model.request.history.HistoryListRequestModel
+import com.poptato.domain.model.response.backlog.BacklogListModel
+import com.poptato.domain.model.response.history.HistoryItemModel
+import com.poptato.domain.model.response.history.HistoryListModel
+import com.poptato.domain.usecase.backlog.GetBacklogListUseCase
+import com.poptato.domain.usecase.history.GetHistoryListUseCase
 import com.poptato.ui.base.BaseViewModel
 import com.potato.history.model.HistoryGroupedItem
-import com.potato.history.model.HistoryItemModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.util.Collections.copy
 import javax.inject.Inject
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
+    private val getHistoryListUseCase: GetHistoryListUseCase
+) : BaseViewModel<HistoryPageState>(HistoryPageState()) {
 
-) : BaseViewModel<HistoryPageState>(
-    HistoryPageState()
-) {
     init {
-        loadDummyHistoryItems()
+        getHistoryList()
     }
 
-    private fun loadDummyHistoryItems() {
-        val dummyItems =  // emptyList<HistoryItemModel>()
-
-            listOf(
-                HistoryItemModel(id = 1, title = "메일보내기", date = "2024.09.30", isChecked = true),
-                HistoryItemModel(id = 2, title = "메일보내기", date = "2024.09.29", isChecked = true),
-                HistoryItemModel(id = 3, title = "문서 검토하기", date = "2024.09.29", isChecked = true),
-                HistoryItemModel(id = 4, title = "프로젝트 계획 작성", date = "2024.09.29", isChecked = true),
-                HistoryItemModel(id = 5, title = "팀 미팅", date = "2024.09.28", isChecked = true),
-                HistoryItemModel(id = 6, title = "메일보내기", date = "2024.09.29", isChecked = true)
+    fun getHistoryList() {
+        if (!uiState.value.isLoadingMore && (uiState.value.currentPage == 0 || uiState.value.currentPage < uiState.value.totalPageCount)) {
+            updateState(
+                uiState.value.copy(
+                    isLoadingMore = true
+                )
             )
+            if(uiState.value.currentPage!=0) {
+                updateState(
+                    uiState.value.copy(
+                        lastItemDate = uiState.value.nowLastItemDate
+                    )
+                )
+            }
 
+            viewModelScope.launch {
+                try {
+                    getHistoryListUseCase.invoke(
+                        request = HistoryListRequestModel(page = uiState.value.currentPage, size = uiState.value.pageSize)
+                    ).collect { result ->
+                        resultResponse(result, ::onSuccessGetHistoryList)
+                    }
+                } catch (e: Exception) {
+                    Timber.e("Failed to load next page: $e")
+                    updateState(
+                        uiState.value.copy(
+                            isLoadingMore = false
+                        )
+                    )
+                }
+            }
+        }
+    }
 
+    private fun onSuccessGetHistoryList(response: HistoryListModel) {
+        val newItems = response.histories
 
-        val groupedItems = dummyItems.groupBy { it.date }.map { (date, items) ->
+        val groupedItems = newItems.groupBy { it.date }.map { (date, items) ->
             HistoryGroupedItem(date, items)
         }
 
-        updateState(uiState.value.copy(historyList = groupedItems))
+        val lastDate = groupedItems.lastOrNull()?.date ?: uiState.value.lastItemDate
+
+        updateState(
+            uiState.value.copy(
+                historyList = uiState.value.historyList + groupedItems,
+                isLoadingMore = false,
+                totalPageCount = response.totalPageCount,
+                currentPage = uiState.value.currentPage + 1,
+                lastItemDate = if (uiState.value.currentPage == 0) lastDate else uiState.value.nowLastItemDate,
+                nowLastItemDate = lastDate
+            )
+        )
     }
 
+    fun updateRenderingComplete(isComplete: Boolean) {
+        updateState (
+            uiState.value.copy(isRenderingComplete = isComplete)
+        )
+    }
 }
