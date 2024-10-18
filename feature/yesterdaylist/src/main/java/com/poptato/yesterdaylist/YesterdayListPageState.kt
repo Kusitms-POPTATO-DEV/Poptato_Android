@@ -1,8 +1,9 @@
 package com.poptato.yesterdaylist
 
-import com.poptato.domain.model.response.today.TodoItemModel
+import com.poptato.domain.model.response.yesterday.YesterdayItemModel
 import com.poptato.ui.base.PageState
 
 data class YesterdayListPageState(
-    val yesterdayList: List<TodoItemModel> = emptyList()
+    val yesterdayList: List<YesterdayItemModel> = emptyList(),
+    val totalPageCount: Int = -1
 ) : PageState

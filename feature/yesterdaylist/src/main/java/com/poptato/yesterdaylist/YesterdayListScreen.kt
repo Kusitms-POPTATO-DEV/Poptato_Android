@@ -39,7 +39,7 @@ import com.poptato.design_system.R
 import com.poptato.design_system.YesterdayAllCheckBtn
 import com.poptato.design_system.YesterdayListTitle
 import com.poptato.domain.model.enums.TodoStatus
-import com.poptato.domain.model.response.today.TodoItemModel
+import com.poptato.domain.model.response.yesterday.YesterdayItemModel
 import com.poptato.ui.common.PoptatoCheckBox
 import timber.log.Timber
 
@@ -133,7 +133,7 @@ fun TitleTopBar(
 
 @Composable
 fun YesterdayTodoList(
-    list: List<TodoItemModel> = emptyList(),
+    list: List<YesterdayItemModel> = emptyList(),
     onCheckedChange: (Long, TodoStatus) -> Unit = {_, _ ->},
 ) {
     Timber.d("[어제 한 일] list -> $list")
@@ -159,7 +159,7 @@ fun YesterdayTodoList(
 
 @Composable
 fun YesterdayTodoItem(
-    item: TodoItemModel = TodoItemModel(),
+    item: YesterdayItemModel = YesterdayItemModel(),
     onCheckedChange: (Long, TodoStatus) -> Unit = {_, _ ->},
 ) {
     Row(

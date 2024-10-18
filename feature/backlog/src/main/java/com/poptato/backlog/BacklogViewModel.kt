@@ -3,12 +3,15 @@ package com.poptato.backlog
 import androidx.compose.animation.core.snap
 import androidx.lifecycle.viewModelScope
 import com.poptato.core.util.move
+import com.poptato.domain.model.request.ListRequestModel
 import com.poptato.domain.model.request.backlog.CreateBacklogRequestModel
 import com.poptato.domain.model.request.backlog.GetBacklogListRequestModel
 import com.poptato.domain.model.response.backlog.BacklogListModel
 import com.poptato.domain.model.response.today.TodoItemModel
+import com.poptato.domain.model.response.yesterday.YesterdayListModel
 import com.poptato.domain.usecase.backlog.CreateBacklogUseCase
 import com.poptato.domain.usecase.backlog.GetBacklogListUseCase
+import com.poptato.domain.usecase.yesterday.GetYesterdayListUseCase
 import com.poptato.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +23,8 @@ import kotlin.random.Random
 @HiltViewModel
 class BacklogViewModel @Inject constructor(
     private val createBacklogUseCase: CreateBacklogUseCase,
-    private val getBacklogListUseCase: GetBacklogListUseCase
+    private val getBacklogListUseCase: GetBacklogListUseCase,
+    private val getYesterdayListUseCase: GetYesterdayListUseCase
 ) : BaseViewModel<BacklogPageState>(
     BacklogPageState()
 ) {
@@ -28,6 +32,7 @@ class BacklogViewModel @Inject constructor(
 
     init {
         getBacklogList(0, 8)
+        getYesterdayList(0, 8)
     }
 
     private fun getBacklogList(page: Int, size: Int) {
@@ -46,6 +51,27 @@ class BacklogViewModel @Inject constructor(
                 backlogList = response.backlogs,
                 totalPageCount = response.totalPageCount,
                 totalItemCount = response.totalCount
+            )
+        )
+    }
+
+    private fun getYesterdayList(page: Int, size: Int) {
+        viewModelScope.launch {
+            getYesterdayListUseCase(request = ListRequestModel(page = page, size = size)).collect {
+                resultResponse(it, { data ->
+                    checkYesterdayListEmpty(data)
+                    Timber.d("[어제 한 일] 서버통신 성공(Backlog) -> $data")
+                }, { error ->
+                    Timber.d("[어제 한 일] 서버통신 실패(Backlog) -> $error")
+                })
+            }
+        }
+    }
+
+    private fun checkYesterdayListEmpty(response: YesterdayListModel) {
+        updateState(
+            uiState.value.copy(
+                isYesterdayListEmpty = response.yesterdays.isEmpty()
             )
         )
     }

@@ -204,12 +204,14 @@ fun BacklogContent(
                 }
             }
 
-            BacklogGuideItem(
-                onClickYesterdayList = onClickYesterdayList,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter),
-                interactionSource = interactionSource
-            )
+            if (!uiState.isYesterdayListEmpty) {
+                BacklogGuideItem(
+                    onClickYesterdayList = onClickYesterdayList,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter),
+                    interactionSource = interactionSource
+                )
+            }
         }
     }
 }

@@ -1,44 +1,46 @@
 package com.poptato.yesterdaylist
 
+import androidx.lifecycle.viewModelScope
 import com.poptato.domain.model.enums.TodoStatus
-import com.poptato.domain.model.response.today.TodoItemModel
+import com.poptato.domain.model.request.ListRequestModel
+import com.poptato.domain.model.response.yesterday.YesterdayListModel
+import com.poptato.domain.usecase.yesterday.GetYesterdayListUseCase
 import com.poptato.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class YesterdayListViewModel @Inject constructor(
-
+    private val getYesterdayListUseCase: GetYesterdayListUseCase
 ): BaseViewModel<YesterdayListPageState>(
     YesterdayListPageState()
 ) {
 
-    private val _yesterdayList: List<TodoItemModel> = listOf(
-        TodoItemModel(1, "test1", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(2, "test2", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(3, "test3", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(4, "test4", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(5, "test5", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(6, "test6", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(7, "test7", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(8, "test8", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(9, "test9", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(10, "test10", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(11, "test11", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(12, "test12", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(13, "test13", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(14, "test14", TodoStatus.INCOMPLETE, false),
-        TodoItemModel(15, "test15", TodoStatus.INCOMPLETE, false),
-    )
-
     init {
-        getYesterdayList(_yesterdayList)    // TODO 서버통신 연결
+        getYesterdayList(0, 8)
     }
 
-    private fun getYesterdayList(updatedList: List<TodoItemModel>) {
+    private fun getYesterdayList(page: Int, size: Int) {
+        viewModelScope.launch {
+            getYesterdayListUseCase(request = ListRequestModel(page = page, size = size)).collect {
+                resultResponse(it, { data ->
+                    setMappingToYesterdayList(data)
+                    Timber.d("[어제 한 일] 서버통신 성공 -> $data")
+                }, { error ->
+                    Timber.d("[어제 한 일] 서버통신 실패 -> $error")
+                })
+            }
+        }
+    }
+
+    private fun setMappingToYesterdayList(response: YesterdayListModel) {
         updateState(
-            uiState.value.copy(yesterdayList =  updatedList)
+            uiState.value.copy(
+                yesterdayList = response.yesterdays,
+                totalPageCount = response.totalPageCount
+            )
         )
     }
 
