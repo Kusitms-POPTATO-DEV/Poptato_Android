@@ -3,5 +3,5 @@ package com.poptato.backlog
 import com.poptato.ui.base.Event
 
 sealed class BacklogEvent: Event {
-    data object OnFailedCreateBacklog: BacklogEvent()
+    data object OnFailedUpdateBacklogList: BacklogEvent()
 }

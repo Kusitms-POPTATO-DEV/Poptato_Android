@@ -1,5 +1,6 @@
 package com.poptato.ui.util
 
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -8,12 +9,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 class DragDropListState(
     val lazyListState: LazyListState,
+    val scope: CoroutineScope,
     private val onMove: (Int, Int) -> Unit
 ) {
     private var draggedDistance by mutableFloatStateOf(0f)
@@ -72,6 +78,13 @@ class DragDropListState(
                 }
             }
         }
+
+        val overscroll = checkForOverScroll()
+        if (overscroll != 0f) {
+            scope.launch {
+                lazyListState.scrollBy(overscroll * 0.05f)
+            }
+        }
     }
 
     fun checkForOverScroll(): Float {
@@ -93,10 +106,13 @@ fun rememberDragDropListState(
     lazyListState: LazyListState = rememberLazyListState(),
     onMove: (Int, Int) -> Unit,
 ): DragDropListState {
+    val scope = rememberCoroutineScope()
+
     return remember {
         DragDropListState(
             lazyListState = lazyListState,
-            onMove = onMove
+            onMove = onMove,
+            scope = scope
         )
     }
 }

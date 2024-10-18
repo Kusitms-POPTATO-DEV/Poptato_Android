@@ -1,33 +1,41 @@
 package com.poptato.backlog
 
-import androidx.compose.animation.core.snap
 import androidx.lifecycle.viewModelScope
+import com.poptato.core.enums.TodoType
 import com.poptato.core.util.move
 import com.poptato.domain.model.request.backlog.CreateBacklogRequestModel
 import com.poptato.domain.model.request.backlog.GetBacklogListRequestModel
+import com.poptato.domain.model.request.todo.DragDropRequestModel
+import com.poptato.domain.model.request.todo.ModifyTodoRequestModel
+import com.poptato.domain.model.request.todo.TodoContentModel
 import com.poptato.domain.model.response.backlog.BacklogListModel
 import com.poptato.domain.model.response.today.TodoItemModel
 import com.poptato.domain.usecase.backlog.CreateBacklogUseCase
 import com.poptato.domain.usecase.backlog.GetBacklogListUseCase
+import com.poptato.domain.usecase.todo.DeleteTodoUseCase
+import com.poptato.domain.usecase.todo.DragDropUseCase
+import com.poptato.domain.usecase.todo.ModifyTodoUseCase
 import com.poptato.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 import kotlin.random.Random
 
 @HiltViewModel
 class BacklogViewModel @Inject constructor(
     private val createBacklogUseCase: CreateBacklogUseCase,
-    private val getBacklogListUseCase: GetBacklogListUseCase
+    private val getBacklogListUseCase: GetBacklogListUseCase,
+    private val deleteTodoUseCase: DeleteTodoUseCase,
+    private val modifyTodoUseCase: ModifyTodoUseCase,
+    private val dragDropUseCase: DragDropUseCase
 ) : BaseViewModel<BacklogPageState>(
     BacklogPageState()
 ) {
     private var snapshotList: List<TodoItemModel> = emptyList()
 
     init {
-        getBacklogList(0, 8)
+        getBacklogList(0, 30)
     }
 
     private fun getBacklogList(page: Int, size: Int) {
@@ -61,47 +69,57 @@ class BacklogViewModel @Inject constructor(
     fun createBacklog(content: String) {
         val newList = uiState.value.backlogList.toMutableList()
         newList.add(0, TodoItemModel(content = content, todoId = Random.nextLong()))
-        updateState(
-            uiState.value.copy(
-                backlogList = newList
-            )
-        )
+        updateNewItemFlag(true)
+        updateList(newList)
 
         viewModelScope.launch(Dispatchers.IO) {
             createBacklogUseCase.invoke(request = CreateBacklogRequestModel(content)).collect {
-                resultResponse(it, { onSuccessCreateBacklog() }, { onFailedCreateBacklog() })
+                resultResponse(it, { onSuccessCreateBacklog() }, { onFailedUpdateBacklogList() })
             }
         }
     }
 
     private fun onSuccessCreateBacklog() {
+        getBacklogList(page = 0, size = uiState.value.backlogList.size)
+    }
+
+    private fun onSuccessUpdateBacklogList() {
         snapshotList = uiState.value.backlogList
     }
 
-    private fun onFailedCreateBacklog() {
-        updateState(
-            uiState.value.copy(
-                backlogList = snapshotList
-            )
-        )
-
-        emitEventFlow(BacklogEvent.OnFailedCreateBacklog)
+    private fun onFailedUpdateBacklogList() {
+        updateList(snapshotList)
+        emitEventFlow(BacklogEvent.OnFailedUpdateBacklogList)
     }
 
-    fun removeBacklogItem(item: TodoItemModel) {
+    fun removeBacklogItem(item: TodoItemModel) { // TODO(홈으로 넘기는 함수. 이후에 API 연결하면서 네이밍 수정 필요)
         val newList = uiState.value.backlogList.filter { it.todoId != item.todoId }
 
-        updateState(
-            uiState.value.copy(
-                backlogList = newList
-            )
-        )
+        updateList(newList)
     }
 
     fun moveItem(fromIndex: Int, toIndex: Int) {
         val currentList = uiState.value.backlogList.toMutableList()
-        currentList.move(fromIndex, toIndex)
-        updateList(currentList)
+        val safeToIndex = toIndex.coerceIn(0, currentList.size - 1)
+        val safeFromIndex = fromIndex.coerceIn(0, currentList.size - 1)
+
+        if (safeFromIndex != safeToIndex) {
+            currentList.move(safeFromIndex, safeToIndex)
+            updateList(currentList)
+        }
+
+        val todoIdList = currentList.map { it.todoId }
+
+        viewModelScope.launch {
+            dragDropUseCase.invoke(
+                request = DragDropRequestModel(
+                    type = TodoType.BACKLOG,
+                    todoIds = todoIdList
+                )
+            ).collect {
+                resultResponse(it, { onSuccessUpdateBacklogList() }, { onFailedUpdateBacklogList() })
+            }
+        }
     }
 
     private fun updateList(updatedList: List<TodoItemModel>) {
@@ -131,6 +149,45 @@ class BacklogViewModel @Inject constructor(
         updateState(
             uiState.value.copy(
                 selectedItem = item
+            )
+        )
+    }
+
+    fun deleteBacklog(id: Long) {
+        val newList = uiState.value.backlogList.filter { it.todoId != id }
+        updateList(newList)
+
+        viewModelScope.launch {
+            deleteTodoUseCase.invoke(id).collect {
+                resultResponse(it, { onSuccessUpdateBacklogList() }, { onFailedUpdateBacklogList() })
+            }
+        }
+    }
+
+    fun modifyTodo(item: ModifyTodoRequestModel) {
+        val newList = uiState.value.backlogList.map {
+            if (it.todoId == item.todoId) {
+                it.copy(content = item.content.content)
+            } else {
+                it
+            }
+        }
+
+        updateList(newList)
+
+        viewModelScope.launch {
+            modifyTodoUseCase.invoke(
+                request = item
+            ).collect {
+                resultResponse(it, { onSuccessUpdateBacklogList() }, { onFailedUpdateBacklogList() })
+            }
+        }
+    }
+
+    fun updateNewItemFlag(flag: Boolean) {
+        updateState(
+            uiState.value.copy(
+                isNewItemCreated = flag
             )
         )
     }

@@ -8,6 +8,8 @@ java {
 }
 
 dependencies {
+    implementation(projects.core)
+
     implementation(libs.coroutines.core)
     implementation(libs.hilt.core)
 }
