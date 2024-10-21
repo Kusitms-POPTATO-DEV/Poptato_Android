@@ -21,6 +21,7 @@ const val TODO = "할 일"
 
 // KaKaoLogin
 const val BtnKaKaoLoginText = "카카오 로그인"
+const val SUCCESS_LOGIN = "로그인 성공하였습니다."
 
 // Backlog
 const val BacklogTitle = "오늘 할 일은 무엇인가요?\n일단 추가해 보세요!"
@@ -72,9 +73,10 @@ const val HistoryTitle = "기록"
 const val HistoryListEmpty = "아직 완료한 일이 없어요"
 
 // Error
-const val ERROR_CREATE_BACKLOG = "에러가 발생하였습니다"
+const val ERROR_GENERIC_MESSAGE = "에러가 발생하였습니다"
 
 // Etc
 const val FINISH_APP_GUIDE = "뒤로가기를 한 번 더 누르면 종료돼요."
 const val DEADLINE = "D-%s"
 const val DEADLINE_DDAY = "D-day"
+const val COMPLETE_DELETE_TODO = "할 일이 삭제되었어요."

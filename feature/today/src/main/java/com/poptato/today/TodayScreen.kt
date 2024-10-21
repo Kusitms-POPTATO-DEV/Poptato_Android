@@ -59,6 +59,7 @@ import com.poptato.design_system.BOOKMARK
 import com.poptato.design_system.BtnGetTodoText
 import com.poptato.design_system.DEADLINE
 import com.poptato.design_system.DEADLINE_DDAY
+import com.poptato.design_system.ERROR_GENERIC_MESSAGE
 import com.poptato.design_system.EmptyTodoTitle
 import com.poptato.design_system.Gray00
 import com.poptato.design_system.Gray100
@@ -81,11 +82,22 @@ import timber.log.Timber
 
 @Composable
 fun TodayScreen(
-    goToBacklog: () -> Unit = {}
+    goToBacklog: () -> Unit = {},
+    showSnackBar: (String) -> Unit
 ) {
     val viewModel: TodayViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val date = TimeFormatter.getTodayMonthDay()
+
+    LaunchedEffect(Unit) {
+        viewModel.eventFlow.collect { event ->
+            when(event) {
+                is TodayEvent.OnFailedUpdateTodayList -> {
+                    showSnackBar(ERROR_GENERIC_MESSAGE)
+                }
+            }
+        }
+    }
 
     TodayContent(
         date = date,
@@ -100,7 +112,7 @@ fun TodayScreen(
 
 @Composable
 fun TodayContent(
-    date: String = "09.28",
+    date: String = "",
     uiState: TodayPageState = TodayPageState(),
     onCheckedChange: (TodoStatus, Long) -> Unit = {_, _ ->},
     onClickBtnGetTodo: () -> Unit = {},

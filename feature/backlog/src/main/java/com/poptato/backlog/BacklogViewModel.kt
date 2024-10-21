@@ -215,7 +215,14 @@ class BacklogViewModel @Inject constructor(
 
         viewModelScope.launch {
             deleteTodoUseCase.invoke(id).collect {
-                resultResponse(it, { onSuccessUpdateBacklogList() }, { onFailedUpdateBacklogList() })
+                resultResponse(
+                    it,
+                    {
+                        onSuccessUpdateBacklogList()
+                        emitEventFlow(BacklogEvent.OnSuccessDeleteBacklog)
+                    },
+                    { onFailedUpdateBacklogList() }
+                )
             }
         }
     }

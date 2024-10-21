@@ -39,7 +39,10 @@ fun NavGraphBuilder.splashNavGraph(navController: NavHostController) {
     }
 }
 
-fun NavGraphBuilder.loginNavGraph(navController: NavHostController) {
+fun NavGraphBuilder.loginNavGraph(
+    navController: NavHostController,
+    showSnackBar: (String) -> Unit
+) {
     navigation(
         startDestination = NavRoutes.KaKaoLoginScreen.route,
         route = NavRoutes.KaKaoLoginGraph.route
@@ -52,7 +55,8 @@ fun NavGraphBuilder.loginNavGraph(navController: NavHostController) {
                             inclusive = true
                         }
                     }
-                }
+                },
+                showSnackBar = showSnackBar
             )
         }
     }
@@ -61,11 +65,11 @@ fun NavGraphBuilder.loginNavGraph(navController: NavHostController) {
 fun NavGraphBuilder.backlogNavGraph(
     navController: NavHostController,
     showBottomSheet: (TodoItemModel) -> Unit,
-    todoBottomSheetClosedFlow: SharedFlow<Unit>,
     updateDeadlineFlow: SharedFlow<String?>,
     deleteTodoFlow: SharedFlow<Long>,
     activateItemFlow: SharedFlow<Long>,
-    updateBookmarkFlow: SharedFlow<Long>
+    updateBookmarkFlow: SharedFlow<Long>,
+    showSnackBar: (String) -> Unit
 ) {
     navigation(
         startDestination = NavRoutes.BacklogScreen.route,
@@ -75,11 +79,11 @@ fun NavGraphBuilder.backlogNavGraph(
             BacklogScreen(
                 goToYesterdayList = { navController.navigate(NavRoutes.YesterdayListScreen.route) },
                 showBottomSheet = showBottomSheet,
-                todoBottomSheetClosedFlow = todoBottomSheetClosedFlow,
                 updateDeadlineFlow = updateDeadlineFlow,
                 deleteTodoFlow = deleteTodoFlow,
                 activateItemFlow = activateItemFlow,
-                updateBookmarkFlow = updateBookmarkFlow
+                updateBookmarkFlow = updateBookmarkFlow,
+                showSnackBar = showSnackBar
             )
         }
     }
@@ -164,11 +168,15 @@ fun NavGraphBuilder.myPageNavGraph(navController: NavHostController) {
     }
 }
 
-fun NavGraphBuilder.todayNavGraph(navController: NavHostController) {
+fun NavGraphBuilder.todayNavGraph(
+    navController: NavHostController,
+    showSnackBar: (String) -> Unit
+) {
     navigation(startDestination = NavRoutes.TodayScreen.route, route = NavRoutes.TodayGraph.route) {
         composable(NavRoutes.TodayScreen.route) {
             TodayScreen(
-                goToBacklog = { navController.navigate(NavRoutes.BacklogScreen.route) }
+                goToBacklog = { navController.navigate(NavRoutes.BacklogScreen.route) },
+                showSnackBar = showSnackBar
             )
         }
     }

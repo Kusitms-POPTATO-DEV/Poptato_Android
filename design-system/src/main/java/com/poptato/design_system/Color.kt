@@ -52,3 +52,6 @@ val KaKaoMain = Color(0xFFFEE500)
 
 // ETC
 val Bookmark = Color(0xFF294746)
+
+// Background
+val BgSnackBar = Color(0xFF121214)

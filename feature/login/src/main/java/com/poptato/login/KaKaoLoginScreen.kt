@@ -1,7 +1,6 @@
 package com.poptato.login
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,11 +31,13 @@ import com.poptato.design_system.Gray100
 import com.poptato.design_system.KaKaoMain
 import com.poptato.design_system.PoptatoTypo
 import com.poptato.design_system.R
+import com.poptato.design_system.SUCCESS_LOGIN
 import timber.log.Timber
 
 @Composable
 fun KaKaoLoginScreen(
-    goToBacklog: () -> Unit = {}
+    goToBacklog: () -> Unit = {},
+    showSnackBar: (String) -> Unit
 ) {
     val viewModel: KaKaoLoginViewModel = hiltViewModel()
     val context = LocalContext.current
@@ -47,7 +47,7 @@ fun KaKaoLoginScreen(
             when(event) {
                 is KaKaoLoginEvent.GoToBacklog -> {
                     goToBacklog()
-                    Toast.makeText(context, "로그인 성공하였습니다.", Toast.LENGTH_SHORT).show()
+                    showSnackBar(SUCCESS_LOGIN)
                 }
             }
         }

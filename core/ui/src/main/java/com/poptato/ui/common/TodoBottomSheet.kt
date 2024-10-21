@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.poptato.design_system.Danger50
 import com.poptato.design_system.Gray00
@@ -102,6 +103,8 @@ fun TodoBottomSheetContent(
                 text = item.content,
                 style = PoptatoTypo.xLMedium,
                 color = Gray00,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(1f)
             )
