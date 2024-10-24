@@ -3,6 +3,7 @@ package com.poptato.feature.component
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,11 +27,13 @@ import com.poptato.design_system.Primary60
 import com.poptato.design_system.R
 import com.poptato.navigation.NavRoutes
 
+@SuppressLint("ModifierParameter")
 @Composable
 fun BottomNavBar(
     type: BottomNavType = BottomNavType.TODAY,
     onClick: (String) -> Unit = {},
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    interactionSource: MutableInteractionSource
 ) {
     Row(
         modifier = modifier
@@ -44,25 +47,29 @@ fun BottomNavBar(
             iconId = if(type == BottomNavType.TODAY) R.drawable.ic_today_selected else R.drawable.ic_today_unselected,
             isSelected = type == BottomNavType.TODAY,
             type = BottomNavType.TODAY,
-            onClick = onClick
+            onClick = onClick,
+            interactionSource = interactionSource
         )
         BottomNavItem(
             iconId = if(type == BottomNavType.BACK_LOG) R.drawable.ic_list_selected else R.drawable.ic_list_unselected,
             isSelected = type == BottomNavType.BACK_LOG,
             type = BottomNavType.BACK_LOG,
-            onClick = onClick
+            onClick = onClick,
+            interactionSource = interactionSource
         )
         BottomNavItem(
             iconId = if(type == BottomNavType.HISTORY) R.drawable.ic_clock_selected else R.drawable.ic_clock_unselected,
             isSelected = type == BottomNavType.HISTORY,
             type = BottomNavType.HISTORY,
-            onClick = onClick
+            onClick = onClick,
+            interactionSource = interactionSource
         )
         BottomNavItem(
             iconId = if(type == BottomNavType.SETTINGS) R.drawable.ic_settings_selected else R.drawable.ic_settings_unselected,
             isSelected = type == BottomNavType.SETTINGS,
             type = BottomNavType.SETTINGS,
-            onClick = onClick
+            onClick = onClick,
+            interactionSource = interactionSource
         )
     }
 }
@@ -72,32 +79,37 @@ fun BottomNavItem(
     iconId: Int = -1,
     isSelected: Boolean = false,
     type: BottomNavType = BottomNavType.DEFAULT,
-    onClick: (String) -> Unit = {}
+    onClick: (String) -> Unit = {},
+    interactionSource: MutableInteractionSource
 ) {
     Column(
         modifier = Modifier
             .size(width = 42.dp, height = 46.dp)
-            .clickable {
-                when (type) {
-                    BottomNavType.TODAY -> {
-                        onClick(NavRoutes.TodayScreen.route)
-                    }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    when (type) {
+                        BottomNavType.TODAY -> {
+                            onClick(NavRoutes.TodayScreen.route)
+                        }
 
-                    BottomNavType.BACK_LOG -> {
-                        onClick(NavRoutes.BacklogScreen.route)
-                    }
+                        BottomNavType.BACK_LOG -> {
+                            onClick(NavRoutes.BacklogScreen.route)
+                        }
 
-                    BottomNavType.HISTORY -> {
-                        onClick(NavRoutes.HistoryScreen.route)
-                    }
+                        BottomNavType.HISTORY -> {
+                            onClick(NavRoutes.HistoryScreen.route)
+                        }
 
-                    BottomNavType.SETTINGS -> {
-                        onClick(NavRoutes.MyPageScreen.route)
-                    }
+                        BottomNavType.SETTINGS -> {
+                            onClick(NavRoutes.MyPageScreen.route)
+                        }
 
-                    BottomNavType.DEFAULT -> {}
+                        BottomNavType.DEFAULT -> {}
+                    }
                 }
-            },
+            ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(

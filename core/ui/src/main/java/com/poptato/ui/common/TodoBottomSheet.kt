@@ -161,9 +161,9 @@ fun TodoBottomSheetContent(
                 .fillMaxWidth()
         ) {
             HorizontalDivider(
+                color = Gray95 ,
                 modifier = Modifier
                     .height(1.dp)
-                    .background(Gray95)
             )
 
             Row(
@@ -211,9 +211,9 @@ fun TodoBottomSheetContent(
             }
 
             HorizontalDivider(
+                color = Gray95,
                 modifier = Modifier
                     .height(1.dp)
-                    .background(Gray95)
             )
         }
     }

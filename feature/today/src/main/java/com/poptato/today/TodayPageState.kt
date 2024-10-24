@@ -8,4 +8,5 @@ data class TodayPageState(
     val todayList: List<TodoItemModel> = emptyList(),
     val totalPageCount: Int = 0,
     val selectedItem: TodoItemModel = TodoItemModel(),
+    val isFinishedInitialization: Boolean = false
 ) : PageState

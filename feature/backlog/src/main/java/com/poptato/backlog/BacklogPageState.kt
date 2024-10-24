@@ -12,5 +12,6 @@ data class BacklogPageState(
     val totalPageCount: Int = -1,
     val isYesterdayListEmpty: Boolean = true,
     val isNewItemCreated: Boolean = false,
-    val currentPage: Int = 0
+    val currentPage: Int = 0,
+    val isFinishedInitialization: Boolean = false
 ): PageState

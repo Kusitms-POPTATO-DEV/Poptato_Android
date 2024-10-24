@@ -4,6 +4,9 @@ import com.poptato.data.datastore.PoptatoDataStore
 import com.poptato.domain.model.request.ReissueRequestModel
 import com.poptato.domain.model.response.auth.TokenModel
 import com.poptato.domain.repository.AuthRepository
+import com.poptato.domain.usecase.auth.GetTokenUseCase
+import com.poptato.domain.usecase.auth.ReissueTokenUseCase
+import com.poptato.domain.usecase.auth.SaveTokenUseCase
 import dagger.Lazy
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
@@ -15,29 +18,30 @@ import timber.log.Timber
 import javax.inject.Inject
 
 class TokenAuthenticator @Inject constructor(
-    private val authRepository: Lazy<AuthRepository>,
-    private val dataStore: PoptatoDataStore
+    private val getTokenUseCase: Lazy<GetTokenUseCase>,
+    private val saveTokenUseCase: Lazy<SaveTokenUseCase>,
+    private val reissueTokenUseCase: Lazy<ReissueTokenUseCase>
 ): Authenticator {
     override fun authenticate(route: Route?, response: Response): Request? {
-        val accessToken = runBlocking { dataStore.accessToken.firstOrNull() }
-        val refreshToken = runBlocking { dataStore.refreshToken.firstOrNull() }
+        val tokens = runBlocking {
+            getTokenUseCase.get().invoke(Unit).firstOrNull()
+        }
 
-        return if (accessToken != null && refreshToken != null) {
+        return tokens?.let { tokenModel ->
             runBlocking {
                 try {
-                    val newTokens = authRepository.get().reissueToken(
-                        request = ReissueRequestModel(
-                            accessToken = accessToken,
-                            refreshToken = refreshToken
+                    val newTokensResult = reissueTokenUseCase.get().invoke(
+                        ReissueRequestModel(
+                            accessToken = tokenModel.accessToken,
+                            refreshToken = tokenModel.refreshToken
                         )
                     ).firstOrNull()
 
-                    newTokens?.getOrNull()?.let { token ->
-                        dataStore.saveAccessToken(token.accessToken)
-                        dataStore.saveRefreshToken(token.refreshToken)
+                    newTokensResult?.getOrNull()?.let { newTokens ->
+                        saveTokenUseCase.get().invoke(newTokens).collect {}
 
                         response.request.newBuilder()
-                            .header("Authorization", "Bearer ${token.accessToken}")
+                            .header("Authorization", "Bearer ${newTokens.accessToken}")
                             .build()
                     } ?: run {
                         Timber.e("Token reissue failed: 새로운 토큰 없음")
@@ -48,7 +52,7 @@ class TokenAuthenticator @Inject constructor(
                     null
                 }
             }
-        } else {
+        } ?: run {
             Timber.e("유효한 토큰 없음")
             null
         }

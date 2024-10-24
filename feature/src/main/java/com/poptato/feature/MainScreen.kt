@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -80,6 +81,7 @@ fun MainScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackBarHost = remember { SnackbarHostState() }
+    val interactionSource = remember { MutableInteractionSource() }
     val sheetState = androidx.compose.material.rememberModalBottomSheetState(
         initialValue = ModalBottomSheetValue.Hidden,
         skipHalfExpanded = true
@@ -166,6 +168,7 @@ fun MainScreen() {
                             TodoBottomSheet(
                                 item = uiState.selectedTodoItem,
                                 setDeadline = {
+                                    viewModel.onUpdatedDeadline(it)
                                     scope.launch { updateDeadlineFlow.emit(it) }
                                 },
                                 onClickShowDatePicker = { bottomSheetType = BottomSheetType.FullDate },
@@ -182,6 +185,7 @@ fun MainScreen() {
                                     }
                                 },
                                 onClickBtnBookmark = {
+                                    viewModel.onUpdatedBookmark(!uiState.selectedTodoItem.isBookmark)
                                     scope.launch {
                                         updateBookmarkFlow.emit(it)
                                     }
@@ -196,7 +200,6 @@ fun MainScreen() {
                                     viewModel.onUpdatedDeadline(date)
                                     scope.launch {
                                         updateDeadlineFlow.emit(date)
-                                        sheetState.hide()
                                     }
                                 }
                             )
@@ -234,7 +237,8 @@ fun MainScreen() {
                                     }
                                 }
                             },
-                            modifier = Modifier.navigationBarsPadding()
+                            modifier = Modifier.navigationBarsPadding(),
+                            interactionSource = interactionSource
                         )
                     }
                 },
@@ -245,6 +249,7 @@ fun MainScreen() {
                         .padding(innerPadding)
                 ) {
                     NavHost(
+                        modifier = Modifier.background(Gray100),
                         navController = navController,
                         startDestination = NavRoutes.SplashGraph.route,
                         exitTransition = { ExitTransition.None },

@@ -53,8 +53,18 @@ class MainViewModel @Inject constructor(
         emitEventFlow(MainEvent.ShowTodoBottomSheet)
     }
 
-    fun onUpdatedDeadline(date: String) {
-        val updatedItem = uiState.value.selectedTodoItem.copy(deadline = date)
+    fun onUpdatedDeadline(date: String?) {
+        val updatedItem = uiState.value.selectedTodoItem.copy(deadline = date ?: "")
+
+        updateState(
+            uiState.value.copy(
+                selectedTodoItem = updatedItem
+            )
+        )
+    }
+
+    fun onUpdatedBookmark(value: Boolean) {
+        val updatedItem = uiState.value.selectedTodoItem.copy(isBookmark = value)
 
         updateState(
             uiState.value.copy(

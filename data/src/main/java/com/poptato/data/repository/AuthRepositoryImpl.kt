@@ -12,6 +12,7 @@ import com.poptato.domain.model.response.auth.TokenModel
 import com.poptato.domain.model.response.login.AuthModel
 import com.poptato.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
@@ -38,5 +39,17 @@ class AuthRepositoryImpl @Inject constructor (
 
     override suspend fun logout(): Flow<Result<Unit>> {
         return apiLaunch(apiCall = { authService.logout() }, AuthLogOutResponseMapper)
+    }
+
+    override suspend fun getToken(): Flow<TokenModel> {
+        return combine(
+            dataStore.accessToken,
+            dataStore.refreshToken
+        ) { accessToken, refreshToken ->
+            TokenModel(
+                accessToken = accessToken.orEmpty(),
+                refreshToken = refreshToken.orEmpty()
+            )
+        }
     }
 }

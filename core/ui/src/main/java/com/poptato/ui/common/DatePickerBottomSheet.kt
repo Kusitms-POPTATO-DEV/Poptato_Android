@@ -65,7 +65,10 @@ fun DatePickerBottomSheet(
         initialDay = initialDay,
         items  = items,
         onDismissRequest = onDismissRequest,
-        onFullDateSelected = onFullDateSelected,
+        onFullDateSelected = {
+            onFullDateSelected(it)
+            onDismissRequest()
+        },
         onSubDateSelected = onSubDateSelected,
         bottomSheetType = bottomSheetType
     )
